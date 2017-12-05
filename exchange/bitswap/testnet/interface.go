@@ -1,10 +1,10 @@
 package bitswap
 
 import (
+	bsnet "github.com/ipfs/go-ipfs/exchange/bitswap/network"
+
 	"gx/ipfs/QmQgLZP9haZheimMHqqAjJh2LhRmNfEoZDfbtkpeMhi9xK/go-testutil"
 	peer "gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
-
-	bsnet "github.com/ipfs/go-ipfs/exchange/bitswap/network"
 )
 
 type Network interface {

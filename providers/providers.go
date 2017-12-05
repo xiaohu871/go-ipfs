@@ -7,6 +7,7 @@ import (
 	flags "github.com/ipfs/go-ipfs/flags"
 
 	cid "gx/ipfs/QmNp85zy9RLrQ5oQD4hPyS39ezrrXpcaa7R4Y9kxdWQLLQ/go-cid"
+	node "gx/ipfs/QmPN7cwmpcc4DWXb4KTB9dNAJgjuPY69h3npsMfhRrQL9c/go-ipld-format"
 	routing "gx/ipfs/QmPR2JzfKd9poHx9XBhzoFeBBC31ZM3W5iUPKJZWyaoZZm/go-libp2p-routing"
 	pstore "gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 	host "gx/ipfs/QmRS46AyqtpJBsf1zmQdeizSDEzo1qkWR7rdEuPFAv8237/go-libp2p-host"
@@ -19,7 +20,7 @@ import (
 const (
 	provideTimeout = time.Second * 15
 
-	// maxProvidersPerRequest specifies the maximum number of providers desired
+	// MaxProvidersPerRequest specifies the maximum number of providers desired
 	// from the network. This value is specified because the network streams
 	// results.
 	// TODO: if a 'non-nice' strategy is implemented, consider increasing this value
@@ -47,8 +48,10 @@ type blockRequest struct {
 
 // Interface is an definition of providers interface to libp2p routing system
 type Interface interface {
-	Provide(*cid.Cid) error
-	FindProviders(ctx context.Context, c *cid.Cid) error
+	Provide(k *cid.Cid) error
+	ProvideRecursive(ctx context.Context, n node.Node, serv node.NodeGetter) error
+
+	FindProviders(ctx context.Context, k *cid.Cid) error
 	FindProvidersAsync(ctx context.Context, k *cid.Cid, max int) <-chan peer.ID
 
 	Stat() (*Stat, error)
@@ -120,6 +123,29 @@ func (p *providers) Provide(b *cid.Cid) error {
 	return nil
 }
 
+func (p *providers) provideRecursive(ctx context.Context, n node.Node, serv node.NodeGetter, done *cid.Set) error {
+	p.Provide(n.Cid())
+
+	for _, l := range n.Links() {
+		if !done.Visit(l.Cid) {
+			continue
+		}
+
+		sub, err := l.GetNode(ctx, serv)
+		if err != nil {
+			return err
+		}
+		if err := p.provideRecursive(ctx, sub, serv, done); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *providers) ProvideRecursive(ctx context.Context, n node.Node, serv node.NodeGetter) error {
+	return p.provideRecursive(ctx, n, serv, cid.NewSet())
+}
+
 func (p *providers) FindProviders(ctx context.Context, c *cid.Cid) error {
 	select {
 	case <-ctx.Done():
@@ -131,6 +157,9 @@ func (p *providers) FindProviders(ctx context.Context, c *cid.Cid) error {
 
 // FindProvidersAsync returns a channel of providers for the given key
 func (p *providers) FindProvidersAsync(ctx context.Context, k *cid.Cid, max int) <-chan peer.ID {
+	if p.host == nil {
+		return nil
+	}
 
 	// Since routing queries are expensive, give bitswap the peers to which we
 	// have open connections. Note that this may cause issues if bitswap starts
