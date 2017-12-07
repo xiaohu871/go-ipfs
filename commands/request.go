@@ -74,6 +74,16 @@ func (c *Context) RootContext() context.Context {
 	return n.Context()
 }
 
+func (c *Context) Close() {
+	// let's not forget teardown. If a node was initialized, we must close it.
+	// Note that this means the underlying req.Context().Node variable is exposed.
+	// this is gross, and should be changed when we extract out the exec Context.
+	if c.node != nil {
+		log.Info("Shutting down node...")
+		c.node.Close()
+	}
+}
+
 // Request represents a call to a command from a consumer
 type Request interface {
 	Path() []string
