@@ -28,14 +28,22 @@ type Reader interface {
 
 type CoreAPI interface {
 	Unixfs() UnixfsAPI
+	Dag() DagAPI
+
 	ResolvePath(context.Context, Path) (Path, error)
-	ResolveNode(context.Context, Path) (Node, error)
+	ResolveNode(context.Context, Path) (Node, error) //TODO: should this get dropped in favor of DagAPI.Get?
 }
 
 type UnixfsAPI interface {
 	Add(context.Context, io.Reader) (Path, error)
 	Cat(context.Context, Path) (Reader, error)
 	Ls(context.Context, Path) ([]*Link, error)
+}
+
+type DagAPI interface {
+	Put(ctx context.Context, src io.Reader, inputEnc string, format *cid.Prefix) ([]Node, error)
+	Get(ctx context.Context, path Path) (Node, error)
+	Tree(ctx context.Context, path Path, depth int) ([]Path, error)
 }
 
 // type ObjectAPI interface {
