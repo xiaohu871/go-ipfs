@@ -24,6 +24,10 @@ func (api *CoreAPI) Unixfs() coreiface.UnixfsAPI {
 	return (*UnixfsAPI)(api)
 }
 
+func (api *CoreAPI) Object() coreiface.ObjectAPI {
+	return (*ObjectAPI)(api)
+}
+
 func (api *CoreAPI) ResolveNode(ctx context.Context, p coreiface.Path) (coreiface.Node, error) {
 	p, err := api.ResolvePath(ctx, p)
 	if err != nil {
