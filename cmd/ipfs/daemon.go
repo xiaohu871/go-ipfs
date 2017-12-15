@@ -396,7 +396,7 @@ func daemonFunc(req cmds.Request, re cmds.ResponseEmitter) {
 	// initialize metrics collector
 	prometheus.MustRegister(&corehttp.IpfsNodeCollector{Node: node})
 
-	fmt.Printf("Daemon is ready\n")
+	fmt.Printf("Daemon is 准备好\n")
 	// collect long-running errors and block for shutdown
 	// TODO(cryptix): our fuse currently doesnt follow this pattern for graceful shutdown
 	for err := range merge(apiErrc, gwErrc, gcErrc) {
